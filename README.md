@@ -54,7 +54,7 @@ Acesse [render.com](https://render.com) e faça login.
 **Frontend (Static Site):**
 1. New → Static Site
 2. Repositório: seu repo
-3. Root Directory: `front-end`
+3. Root Directory: `frontend`
 4. Build Command: `npm install && npm run build`
 5. Publish Directory: `dist`
 6. Environment Variables:
