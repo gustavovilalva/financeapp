@@ -20,7 +20,7 @@ services:
   - type: web
     name: financeapp-web
     runtime: static
-    rootDir: frontend
+    rootDir: front-end
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
