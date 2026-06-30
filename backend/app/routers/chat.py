@@ -1,11 +1,11 @@
 import os
 import json
-import google.generativeai as genai
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from datetime import date
 from pydantic import BaseModel
-from .. import models, schemas
+from .. import models
 from ..database import get_db
 from ..auth import get_current_user
 
@@ -39,8 +39,7 @@ Exemplos de category_hint para receitas:
 Retorne APENAS o JSON, sem texto adicional. Exemplo:
 {"type": "expense", "amount": 80.00, "description": "Pizza", "category_hint": "Restaurante"}
 
-Se não conseguir identificar o valor, retorne {"error": "Não consegui identificar o valor. Tente: 'gastei 50 reais com mercado'"}
-"""
+Se não conseguir identificar o valor, retorne {"error": "Não consegui identificar o valor. Tente: 'gastei 50 reais com mercado'"}"""
 
 
 class ChatMessage(BaseModel):
@@ -63,20 +62,28 @@ def process_chat(
     if not api_key:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY não configurada")
 
-    # Call Gemini
+    # Call Gemini REST API directly
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(
-            f"{SYSTEM_PROMPT}\n\nMensagem do usuário: {body.message}"
-        )
-        raw = response.text.strip()
-        # Remove markdown code blocks if present
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": f"{SYSTEM_PROMPT}\n\nMensagem do usuário: {body.message}"
+                }]
+            }]
+        }
+        with httpx.Client(timeout=30) as client:
+            resp = client.post(url, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+
+        raw = data["candidates"][0]["content"]["parts"][0]["text"].strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-        parsed = json.loads(raw)
+        parsed = json.loads(raw.strip())
+
     except json.JSONDecodeError:
         return ChatResponse(success=False, message="Não entendi. Tente: 'gastei 50 reais com mercado'")
     except Exception as e:
@@ -85,9 +92,8 @@ def process_chat(
     if "error" in parsed:
         return ChatResponse(success=False, message=parsed["error"])
 
-    # Validate required fields
     if not all(k in parsed for k in ["type", "amount", "description"]):
-        return ChatResponse(success=False, message="Não consegui identificar todas as informações. Tente ser mais específico.")
+        return ChatResponse(success=False, message="Não consegui identificar todas as informações.")
 
     tx_type = parsed["type"]
     amount = float(parsed["amount"])
@@ -95,7 +101,7 @@ def process_chat(
     category_hint = parsed.get("category_hint", "")
 
     if amount <= 0:
-        return ChatResponse(success=False, message="Valor inválido. Informe um valor positivo.")
+        return ChatResponse(success=False, message="Valor inválido.")
 
     # Find best matching category
     categories = db.query(models.Category).filter(
@@ -116,23 +122,20 @@ def process_chat(
         category = categories[0]
 
     if not category:
-        return ChatResponse(success=False, message="Nenhuma categoria encontrada. Crie categorias primeiro.")
+        return ChatResponse(success=False, message="Nenhuma categoria encontrada.")
 
-    # Find first account of user
     account = db.query(models.Account).filter(
         models.Account.user_id == current_user.id
     ).first()
 
     if not account:
-        return ChatResponse(success=False, message="Nenhuma conta encontrada. Crie uma conta bancária primeiro.")
+        return ChatResponse(success=False, message="Nenhuma conta encontrada. Crie uma conta primeiro.")
 
-    # Adjust balance
     if tx_type == "income":
         account.balance += amount
     else:
         account.balance -= amount
 
-    # Create transaction
     transaction = models.Transaction(
         user_id=current_user.id,
         account_id=account.id,
@@ -146,13 +149,6 @@ def process_chat(
     db.commit()
     db.refresh(transaction)
 
-    tx_out = (
-        db.query(models.Transaction)
-        .options(joinedload(models.Transaction.category))
-        .filter(models.Transaction.id == transaction.id)
-        .first()
-    )
-
     type_label = "Receita" if tx_type == "income" else "Despesa"
     msg = f"✅ {type_label} de R$ {amount:.2f} cadastrada! ({description} • {category.name} • {account.name})"
 
@@ -160,12 +156,12 @@ def process_chat(
         success=True,
         message=msg,
         transaction={
-            "id": tx_out.id,
-            "type": tx_out.type,
-            "amount": tx_out.amount,
-            "description": tx_out.description,
-            "category": tx_out.category.name if tx_out.category else "",
+            "id": transaction.id,
+            "type": tx_type,
+            "amount": amount,
+            "description": description,
+            "category": category.name,
             "account": account.name,
-            "date": str(tx_out.date),
+            "date": str(transaction.date),
         },
     )
