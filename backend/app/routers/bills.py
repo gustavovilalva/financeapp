@@ -9,7 +9,7 @@ from ..auth import get_current_user
 router = APIRouter(prefix="/api/bills", tags=["bills"])
 
 
-@router.get("/", response_model=List[schemas.BillOut])
+@router.post("/", response_model=schemas.BillOut, status_code=201)
 def list_bills(
     month: Optional[int] = Query(None),
     year: Optional[int] = Query(None),
@@ -33,7 +33,7 @@ def list_bills(
     return query.order_by(models.Bill.due_date.asc()).all()
 
 
-@router.post("/", response_model=schemas.BillOut, status_code=201)
+@router.post("", response_model=schemas.BillOut, status_code=201)
 def create_bill(
     data: schemas.BillCreate,
     db: Session = Depends(get_db),
