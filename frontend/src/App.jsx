@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
+import QuickChat from './components/QuickChat'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="contas" element={<AccountsPage />} />
           </Route>
         </Routes>
+        <PrivateRoute><QuickChat /></PrivateRoute>
       </BrowserRouter>
     </AuthProvider>
   )
