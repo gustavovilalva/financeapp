@@ -112,4 +112,35 @@ export default function QuickChat() {
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="text-xs bg-white border border-gray-200
+                  className="text-xs bg-white border border-gray-200 rounded-full px-2 py-1 text-gray-600 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="p-3 border-t border-gray-100 bg-white flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Ex: gastei 80 reais com pizza..."
+              className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              disabled={loading}
+            />
+            <button
+              onClick={() => send()}
+              disabled={!input.trim() || loading}
+              className="w-9 h-9 flex items-center justify-center bg-green-600 hover:bg-green-700 disabled:bg-gray-200 text-white rounded-xl transition-colors flex-shrink-0"
+            >
+              <Send size={15} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
