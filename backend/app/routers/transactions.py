@@ -24,7 +24,7 @@ def _adjust_balance(db: Session, account_id: int, user_id: int, amount: float, t
     return account
 
 
-@router.get("/", response_model=List[schemas.TransactionOut])
+@router.post("/", response_model=schemas.TransactionOut, status_code=201)
 def list_transactions(
     month: Optional[int] = Query(None),
     year: Optional[int] = Query(None),
@@ -51,7 +51,7 @@ def list_transactions(
     return query.order_by(models.Transaction.date.desc()).all()
 
 
-@router.post("/", response_model=schemas.TransactionOut, status_code=201)
+@router.post("", response_model=schemas.TransactionOut, status_code=201)
 def create_transaction(
     data: schemas.TransactionCreate,
     db: Session = Depends(get_db),
