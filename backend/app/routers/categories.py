@@ -42,7 +42,7 @@ def create_default_categories(db: Session, user_id: int):
     db.commit()
 
 
-@router.get("/", response_model=List[schemas.CategoryOut])
+@router.post("/", response_model=schemas.CategoryOut, status_code=201)
 def list_categories(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -50,7 +50,7 @@ def list_categories(
     return db.query(models.Category).filter(models.Category.user_id == current_user.id).all()
 
 
-@router.post("/", response_model=schemas.CategoryOut, status_code=201)
+@router.post("", response_model=schemas.CategoryOut, status_code=201)
 def create_category(
     data: schemas.CategoryCreate,
     db: Session = Depends(get_db),
