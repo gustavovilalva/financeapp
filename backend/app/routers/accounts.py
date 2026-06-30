@@ -8,7 +8,7 @@ from ..auth import get_current_user
 router = APIRouter(prefix="/api/accounts", tags=["accounts"])
 
 
-@router.get("/", response_model=List[schemas.AccountOut])
+@router.get("", response_model=List[schemas.AccountOut])
 def list_accounts(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -16,7 +16,7 @@ def list_accounts(
     return db.query(models.Account).filter(models.Account.user_id == current_user.id).all()
 
 
-@router.post("/", response_model=schemas.AccountOut, status_code=201)
+@router.post("", response_model=schemas.AccountOut, status_code=201)
 def create_account(
     data: schemas.AccountCreate,
     db: Session = Depends(get_db),
