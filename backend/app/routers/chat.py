@@ -39,7 +39,7 @@ def process_chat(
         if not api_key:
             return ChatResponse(success=False, message="ERRO: GEMINI_API_KEY não configurada")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
         payload = {"contents": [{"parts": [{"text": f"{SYSTEM_PROMPT}\n\nMensagem: {body.message}"}]}]}
 
         with httpx.Client(timeout=30) as client:
