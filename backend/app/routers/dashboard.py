@@ -10,7 +10,7 @@ from ..auth import get_current_user
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
-@router.get("/", response_model=schemas.DashboardSummary)
+@router.get("", response_model=schemas.DashboardSummary)
 def get_dashboard(
     month: Optional[int] = Query(None),
     year: Optional[int] = Query(None),
